@@ -1,19 +1,14 @@
 
 module Purdle.Types where
 
-import Prelude
+import Data.Letter
+import Data.Sequence (Seq)
 import Data.V5
-import Data.L6
-
-data Letter = A | B | C | D | E | F | G | H | I | J | K | L | M
-            | N | O | P | Q | R | S | T | U | V | W | X | Y | Z
-
-derive instance Eq Letter
-derive instance Ord Letter
+import Prelude
 
 type Word = V5 Letter
 
-type GuessState = L6 Word
+type GuessState = Seq Word
 
 type GameInfo =
     { goalWord :: Word

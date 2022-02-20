@@ -3,6 +3,7 @@ module Purdle.Evaluate where
 
 import Control.Apply
 import Control.Monad.State
+import Data.Letter
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe

@@ -122,6 +122,12 @@ let upstream =
 
 let overrides = {=}
 
-let additions = {=}
+let additions =
+      { sequences =
+        { dependencies = [] : List Text
+        , repo = "https://github.com/hdgarrood/purescript-sequences"
+        , version = "v3.0.2"
+        }
+      }
 
 in  upstream ⫽ overrides ⫽ additions

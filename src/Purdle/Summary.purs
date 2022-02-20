@@ -2,11 +2,10 @@
 module Purdle.Summary where
 
 import Control.Apply
-import Purdle.Evaluate
-import Data.Ord.Max
 import Control.Monad.State
 import Data.Foldable
 import Data.L6
+import Data.Letter
 import Data.List.Lazy as List
 import Data.Map (Map)
 import Data.Map as Map
@@ -14,6 +13,7 @@ import Data.Maybe
 import Data.Maybe.First
 import Data.Monoid.Additive
 import Data.Newtype
+import Data.Ord.Max
 import Data.PositiveInt
 import Data.Set (Set)
 import Data.Set as Set
@@ -21,6 +21,7 @@ import Data.Traversable
 import Data.Tuple
 import Data.V5
 import Prelude
+import Purdle.Evaluate
 import Purdle.Types
 
 
@@ -29,7 +30,7 @@ letterColors
     :: GameInfo
     -> Map Letter Color
 letterColors {goalWord, guessState} = Map.fromFoldableWith (<>) $
-    foldMap go (l6ToList guessState)
+    foldMap go guessState
   where
     go :: Word -> List.List (Tuple Letter Color)
     go guess = List.fromFoldable (lift2 Tuple guess res)
@@ -78,7 +79,7 @@ letterSummary {goalWord, guessState} = summary
       Yellow -> Tuple (Map.SemigroupMap (Map.singleton l (Additive one))) $
                   emptySpot { yellows = Set.singleton l }
       Green  -> Tuple mempty $ emptySpot { greens  = First (Just l)  }
-    summary = foldMap go (l6ToList guessState)
+    summary = foldMap go guessState
     emptySpot :: { blacks :: Set Letter, yellows :: Set Letter, greens :: First Letter }
     emptySpot = mempty
     go guess = { positions, yellowCounts: map (Max <<< unwrap) yellowSums }
@@ -87,7 +88,7 @@ letterSummary {goalWord, guessState} = summary
         Tuple yellowSums positions = sequence (lift2 evalLetter guess res)
 
 gameWon :: GameInfo -> Boolean
-gameWon {goalWord, guessState} = List.any (_ == goalWord) (l6ToList guessState)
+gameWon {goalWord, guessState} = List.any (_ == goalWord) guessState
 
 type HardModeErrors =
     { greenNotUsed  :: V5 (Maybe Letter)
