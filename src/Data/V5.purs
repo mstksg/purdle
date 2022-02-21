@@ -66,3 +66,8 @@ v5FromList xs0 = { res, leftovers }
         List.Nil       -> pure Nothing
         List.Cons y ys -> Just y <$ put ys
     Tuple res leftovers = runState (sequence (pure go)) xs0
+
+v5FromListExact :: forall a. Array a -> Maybe (V5 a)
+v5FromListExact = case _ of
+    [x1,x2,x3,x4,x5] -> Just (V5 {x1,x2,x3,x4,x5})
+    _                -> Nothing

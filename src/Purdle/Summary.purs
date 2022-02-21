@@ -2,6 +2,7 @@
 module Purdle.Summary where
 
 import Control.Apply
+import Data.FoldableWithIndex
 import Control.Monad.State
 import Data.Foldable
 import Data.Letter
@@ -10,6 +11,7 @@ import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe
 import Data.Maybe.First
+import Data.List.Lazy.NonEmpty as NE
 import Data.Monoid.Additive
 import Data.Newtype
 import Data.Ord.Max
@@ -94,9 +96,28 @@ type HardModeErrors =
     }
 
 hardModeNoErrors :: HardModeErrors -> Boolean
-hardModeNoErrors {greenNotUsed, yellowNotUsed} =
-     all isNothing greenNotUsed
-  && Map.isEmpty yellowNotUsed
+hardModeNoErrors = isJust <<< showHardModeErrors
+
+cardinalize :: Int -> String
+cardinalize i
+    | i == 1    = "1st"
+    | i == 2    = "2nd"
+    | i == 3    = "3rd"
+    | otherwise = show i <> "th"
+
+showHardModeErrors :: HardModeErrors -> Maybe (NE.NonEmptyList String)
+showHardModeErrors { greenNotUsed, yellowNotUsed } =
+    NE.fromList $ greenErrors <> yellowErrors
+  where
+    greenErrors = List.catMaybes $
+      List.zipWith (\i -> map $ \l ->
+                        cardinalize i <> " letter must be " <> show l
+                   )
+        (List.iterate (_ + 1) 1)
+        (List.fromFoldable greenNotUsed)
+    yellowErrors = map (\(Tuple l i) -> "Guess missing " <> show (unPositive i) <> "x " <> show l)
+                 $ Map.toUnfoldable yellowNotUsed
+
 
 validHardMode :: ColorSummary -> Word -> HardModeErrors
 validHardMode {yellowCounts, greens} guess =
@@ -120,10 +141,22 @@ type SuperHardModeErrors =
     }
 
 superHardModeNoErrors :: SuperHardModeErrors -> Boolean
-superHardModeNoErrors { positionErrors, yellowNotUsed, blacksUsed } =
-     all isNothing positionErrors
-  && Map.isEmpty yellowNotUsed
-  && Set.isEmpty blacksUsed
+superHardModeNoErrors = isJust <<< showSuperHardModeErrors
+
+showSuperHardModeErrors :: SuperHardModeErrors -> Maybe (NE.NonEmptyList String)
+showSuperHardModeErrors {positionErrors, yellowNotUsed, blacksUsed} =
+    NE.fromList $ yellowErrors <> blackErrors
+  where
+    posErrors = List.catMaybes $
+      List.zipWith (\i -> map case _ of
+                        NeedsGreen l -> cardinalize i <> " letter must be " <> show l
+                        HasYellow  l -> cardinalize i <> " letter must not be " <> show l
+                   )
+        (List.iterate (_ + 1) 1)
+        (List.fromFoldable positionErrors)
+    yellowErrors = map (\(Tuple l i) -> "Guess missing " <> show (unPositive i) <> "x " <> show l)
+                 $ Map.toUnfoldable yellowNotUsed
+    blackErrors = map (\l -> "Cannot use " <> show l) $ List.fromFoldable blacksUsed
 
 validSuperHardMode :: ColorSummary -> Word -> SuperHardModeErrors
 validSuperHardMode {blacks, yellowCounts, yellowPositions, greens} guess =
