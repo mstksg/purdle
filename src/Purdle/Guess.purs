@@ -7,7 +7,6 @@ import Data.Either
 import Data.Sequence as Seq
 import Prelude
 import Purdle.Summary
-import Data.L6
 
 makeGuess
     :: GameInfo

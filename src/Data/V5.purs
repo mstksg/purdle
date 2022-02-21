@@ -1,9 +1,14 @@
 
 module Data.V5 where
 
-import Prelude
-import Data.Traversable
 import Control.Apply
+import Control.Monad.State
+import Data.List.Lazy (List)
+import Data.List.Lazy as List
+import Data.Maybe
+import Data.Traversable
+import Data.Tuple
+import Prelude
 
 newtype V5 a = V5
     { x1 :: a
@@ -51,3 +56,13 @@ instance Monoid a => Monoid (V5 a) where
 
 data Ix5 = Ix5_0 | Ix5_1 | Ix5_2 | Ix5_3 | Ix5_4
 
+v5FromList :: forall a. List a -> { res :: V5 (Maybe a), leftovers :: List a }
+v5FromList xs0 = { res, leftovers }
+  where
+    go :: State (List a) (Maybe a)
+    go = do
+      xs <- gets List.step
+      case xs of
+        List.Nil       -> pure Nothing
+        List.Cons y ys -> Just y <$ put ys
+    Tuple res leftovers = runState (sequence (pure go)) xs0

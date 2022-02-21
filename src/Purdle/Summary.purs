@@ -4,7 +4,6 @@ module Purdle.Summary where
 import Control.Apply
 import Control.Monad.State
 import Data.Foldable
-import Data.L6
 import Data.Letter
 import Data.List.Lazy as List
 import Data.Map (Map)
@@ -24,15 +23,14 @@ import Prelude
 import Purdle.Evaluate
 import Purdle.Types
 
-
 -- | Used for keyboard display
 letterColors
     :: GameInfo
-    -> Map Letter Color
+    -> Map Letter LetterEval
 letterColors {goalWord, guessState} = Map.fromFoldableWith (<>) $
     foldMap go guessState
   where
-    go :: Word -> List.List (Tuple Letter Color)
+    go :: Word -> List.List (Tuple Letter LetterEval)
     go guess = List.fromFoldable (lift2 Tuple guess res)
       where
         res = evalGuess goalWord guess
@@ -75,10 +73,10 @@ letterSummary {goalWord, guessState} = summary
     }
   where
     evalLetter l = case _ of
-      Black  -> Tuple mempty $ emptySpot { blacks  = Set.singleton l }
-      Yellow -> Tuple (Map.SemigroupMap (Map.singleton l (Additive one))) $
-                  emptySpot { yellows = Set.singleton l }
-      Green  -> Tuple mempty $ emptySpot { greens  = First (Just l)  }
+      NotInWord -> Tuple mempty $ emptySpot { blacks  = Set.singleton l }
+      WrongPos  -> Tuple (Map.SemigroupMap (Map.singleton l (Additive one))) $
+                     emptySpot { yellows = Set.singleton l }
+      RightPos  -> Tuple mempty $ emptySpot { greens  = First (Just l)  }
     summary = foldMap go guessState
     emptySpot :: { blacks :: Set Letter, yellows :: Set Letter, greens :: First Letter }
     emptySpot = mempty

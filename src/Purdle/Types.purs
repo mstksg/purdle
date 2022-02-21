@@ -15,17 +15,3 @@ type GameInfo =
     , guessState :: GuessState
     }
 
-data Color = Black | Yellow | Green
-
-derive instance Eq Color
-derive instance Ord Color
-
-instance Show Color where
-    show = case _ of
-      Black  -> "Black"
-      Yellow -> "Yellow"
-      Green  -> "Green"
-
-instance Semigroup Color where
-    append = max
-

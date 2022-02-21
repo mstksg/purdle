@@ -20,9 +20,9 @@ data WordPickerQuery a = WPQSetColors ColorMap a
 data WordPickerOut = WPQInProgress (Seq Letter)
                    | WPQSubmit (Array Letter)
 
-wordPicker :: forall m. Int -> H.Component WordPickerQuery (Seq Letter) WordPickerOut m
+wordPicker :: forall m. Int -> H.Component WordPickerQuery (Array Letter) WordPickerOut m
 wordPicker wordSize = H.mkComponent
-    { initialState: identity
+    { initialState: Seq.fromFoldable
     , render: \_ ->
         HH.slot _keyboard unit keyboard Map.empty identity
     , eval: H.mkEval $ H.defaultEval
