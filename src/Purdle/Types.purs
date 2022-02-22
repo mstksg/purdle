@@ -20,5 +20,5 @@ type GameInfo =
     , guessState :: GuessState
     }
 
-type Dictionary = Trie Letter String
+type Dictionary = Trie Letter Word
 

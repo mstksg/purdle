@@ -125,9 +125,9 @@ handleActionBoard dict act = do
               Just w  -> Right w
             let goodHardMode = flip validHardMode wVec <$> summary
                 goodSuperHardMode = flip validSuperHardMode wVec <$> summary
-            _ <- case List.fromFoldable w `Trie.lookup` dict of
+            case List.fromFoldable w `Trie.lookup` dict of
               Nothing -> Left ["Not in word list: " <> showWord wVec]
-              Just w  -> Right w
+              Just _  -> Right unit
             case boardState.gameSettings.gameMode of
               NormalMode -> Right unit
               HardMode   -> case showHardModeErrors (force goodHardMode) of
