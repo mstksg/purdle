@@ -12,6 +12,17 @@ You can edit this file as you like.
   , "halogen"
   , "undefined"
   , "sequences"
+  , "arrays"
+  , "either"
+  , "lazy"
+  , "maybe"
+  , "newtype"
+  , "orders"
+  , "tuples"
+  , "lists"
+  , "effect"
+  , "exceptions"
+  , "web-dom"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

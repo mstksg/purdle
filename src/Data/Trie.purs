@@ -17,3 +17,6 @@ lookup :: forall k v. Ord k => List k -> Trie k v -> Maybe v
 lookup ks (Trie tr) = case List.step ks of
     List.Nil        -> tr.here
     List.Cons k ks' -> lookup ks' =<< Map.lookup k tr.there
+
+empty :: forall k v. Trie k v
+empty = Trie { here: Nothing, there: Map.empty }

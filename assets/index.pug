@@ -1,0 +1,58 @@
+doctype html
+head
+  // script(async='' src='https://www.googletagmanager.com/gtag/js?id=UA-443711-10')
+  // script
+  //   | window.dataLayer = window.dataLayer || [];
+  //   | function gtag(){dataLayer.push(arguments);}
+  //   | gtag('js', new Date());
+  //   | gtag('config', 'UA-443711-10');
+  link(href='../static/css/normalize.css' rel='stylesheet' type='text/css')
+  link(href='../scss/grid.scss' rel='stylesheet' type='text/css')
+  // link(href='../scss/font.scss' rel='stylesheet' type='text/css')
+  // link(href='../scss/main.scss' rel='stylesheet' type='text/css')
+  // link(href='../scss/ui.scss' rel='stylesheet' type='text/css')
+  // link(href='https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@7.2.0/dist/css/autoComplete.min.css' rel='stylesheet' type='text/css')
+  // link(href='https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css' rel='stylesheet' type='text/css')
+  // link(href='https://cdn.jsdelivr.net/npm/pretty-checkbox@3.0/dist/pretty-checkbox.min.css' rel='stylesheet' type='text/css')
+  meta(charset="utf-8")
+  meta(http-equiv="Content-Type" content="text/html; charset=utf-8")
+  meta(name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1")
+
+  meta(name='description' content=desc)
+  meta(http-equiv='Content-Type' content='text/html;charset=utf-8')
+  meta(name='viewport' content='width=device-width,initial-scale=1.0')
+
+  // meta(property='og:site_name' content=title)
+  // meta(property='og:description' content=desc)
+  // meta(property='og:type' content='website')
+  // meta(property='og:title' content=title)
+  // meta(property='og:image' content=image)
+  // meta(property='og:locale' content='en_US')
+  // meta(property='og:url' content='https://coronavirus.jle.im')
+  // meta(name='twitter:card' content='summary')
+  // meta(name='twitter:title' content=title)
+  // meta(name='twitter:description' content=desc)
+  // meta(name='twitter:image' content=image)
+  // meta(name='twitter:site' content='@mstk')
+  // meta(name='twitter:creator' content='@mstk')
+  // link(href='https://coronavirus.jle.im/favicon.ico' rel='shortcut icon')
+
+  title Purdle
+
+#header-container
+#body-container.container
+  #main-container.grid
+    header.grid__col.grid__col--6-of-6
+      h2 Coronavirus Data Plotter
+    main#ui.unloaded
+
+// script(src='https://cdn.jsdelivr.net/npm/d3@5.16.0')
+// script(src='https://cdn.jsdelivr.net/npm/d3-array@2.4.0')
+// script(src='https://cdn.jsdelivr.net/npm/d3-simple-slider@1.7.0')
+// script(src='https://cdn.jsdelivr.net/npm/save-svg-as-png@1.4.17')
+// script(src='https://cdn.jsdelivr.net/npm/papaparse@5.2.0')
+// script(src='https://cdn.jsdelivr.net/npm/lodash@4.17.15')
+// script(src='https://cdn.jsdelivr.net/npm/toastify-js@1.7.0')
+// script(src='https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@7.2.0/dist/js/autoComplete.min.js')
+script(src='../dist/app.js')
+

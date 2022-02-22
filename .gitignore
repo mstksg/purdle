@@ -13,4 +13,5 @@
 /_site
 /_build
 /yarn-error.log
-
+/.parcel-cache
+index.js

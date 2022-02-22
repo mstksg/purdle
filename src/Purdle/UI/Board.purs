@@ -56,8 +56,6 @@ type BoardState =
     , gameOver     :: Boolean
     }
 
-type Dictionary = Trie Letter String
-
 newBoardState :: GameSettings -> BoardState
 newBoardState gameSettings =
     { guessState: Seq.empty
@@ -80,7 +78,7 @@ board dict = H.mkComponent
     , eval: H.mkEval $ H.defaultEval
         { handleAction = handleActionBoard dict
         , handleQuery = case _ of
-            NewGame gs r -> Just r <$ put_ (newBoardState gs)
+            NewGame gs r -> Just r <$ put (newBoardState gs)
         }
     }
 
@@ -127,7 +125,7 @@ handleActionBoard dict act = do
             let goodHardMode = flip validHardMode wVec <$> summary
                 goodSuperHardMode = flip validSuperHardMode wVec <$> summary
             case List.fromFoldable w `Trie.lookup` dict of
-              Nothing -> Left ["Not in word list"]
+              Nothing -> Left ["Not in word list: " <> showWord wVec]
               Just _  -> Right unit
             case boardState.gameSettings.gameMode of
               NormalMode -> Right unit
