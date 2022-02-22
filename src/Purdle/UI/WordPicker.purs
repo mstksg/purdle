@@ -37,7 +37,9 @@ wordPicker wordSize = H.mkComponent
                         =<< modify (fromMaybe Seq.empty <<< Seq.init)
         , handleQuery  = case _ of
             WPQSetColors cm r -> H.query _keyboard unit $ KQSetColors cm r
-            WPQReset r -> Just r <$ put Seq.empty
+            WPQReset r -> Just r <$ do
+               put Seq.empty
+               H.raise $ WPQInProgress Seq.empty
         }
     }
 

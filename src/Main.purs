@@ -1,13 +1,13 @@
 
 module Main where
 
--- import Corona.Chart.UI as UI
--- import Corona.Data.JHU (fetchCoronaData)
--- import Corona.Data.NYT as NYT
--- import Data.Either (Either(..))
--- import Effect.Class.Console
+import Data.Foldable
+import Data.Letter
+import Data.List.Lazy as List
+import Data.Map as Map
 import Data.Maybe
 import Data.Trie as Trie
+import Data.Tuple
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Exception (throwException, error)
@@ -27,5 +27,9 @@ main = HA.runHalogenAff do
     Just cont -> runUI (UI.mainComponent initialDict) unit cont
 
 initialDict :: Dictionary
-initialDict = Trie.empty
--- foreign import logMe :: forall a. a -> Effect Unit
+initialDict = Trie.fromMap $ Map.fromFoldable $ map reshape $
+    [ [H,E,L,L,O]
+    , [H,E,L,P,S]
+    ]
+  where
+    reshape wd = Tuple (List.fromFoldable wd) (foldMap show wd)

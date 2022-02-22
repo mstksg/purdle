@@ -23,6 +23,7 @@ You can edit this file as you like.
   , "effect"
   , "exceptions"
   , "web-dom"
+  , "bifunctors"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

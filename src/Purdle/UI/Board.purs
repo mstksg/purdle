@@ -7,6 +7,7 @@ import Data.Array as Array
 import Data.Either
 import Data.Foldable
 import Data.Lazy
+import Purdle.UI.Keyboard
 import Data.Letter
 import Data.List.Lazy as List
 import Data.Maybe
@@ -124,9 +125,9 @@ handleActionBoard dict act = do
               Just w  -> Right w
             let goodHardMode = flip validHardMode wVec <$> summary
                 goodSuperHardMode = flip validSuperHardMode wVec <$> summary
-            case List.fromFoldable w `Trie.lookup` dict of
+            _ <- case List.fromFoldable w `Trie.lookup` dict of
               Nothing -> Left ["Not in word list: " <> showWord wVec]
-              Just _  -> Right unit
+              Just w  -> Right w
             case boardState.gameSettings.gameMode of
               NormalMode -> Right unit
               HardMode   -> case showHardModeErrors (force goodHardMode) of
@@ -141,7 +142,13 @@ handleActionBoard dict act = do
            traverse_ (H.raise <<< BOToast) es
            modify_ \bs -> bs { lastWordBad = true }
         Right gs -> do
-          modify_ \bs -> bs { guessState = bs.guessState `Seq.snoc` gs }
+          bs <- modify \bs -> bs { guessState = bs.guessState `Seq.snoc` gs }
+          _ <- H.query _wordPicker unit $ WPQReset unit
+          let colorMap = letterColors
+                { goalWord: bs.gameSettings.goalWord
+                , guessState: bs.guessState
+                }
+          _ <- H.query _wordPicker unit $ WPQSetColors (map leToColor colorMap) unit
           if (gs == boardState.gameSettings.goalWord)
             then do
               H.raise $ BOEndGame (GameWin (Seq.length boardState.guessState + 1))
@@ -161,6 +168,12 @@ isWrongClass :: Boolean -> String
 isWrongClass isWrong
     | isWrong   = "invalid-guess"
     | otherwise = ""
+
+leToColor :: LetterEval -> Color
+leToColor = case _ of
+    NotInWord -> Black
+    WrongPos  -> Yellow
+    RightPos  -> Green
 
 data GridBox = EvalLetter LetterEval Letter
              | InputLetter Letter
