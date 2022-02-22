@@ -4,10 +4,10 @@ module Purdle.UI.Board where
 import Control.Apply
 import Control.Monad.State
 import Data.Array as Array
-import Data.Letter
 import Data.Either
-import Data.Lazy
 import Data.Foldable
+import Data.Lazy
+import Data.Letter
 import Data.List.Lazy as List
 import Data.Maybe
 import Data.Sequence (Seq)
@@ -34,7 +34,7 @@ import Undefined
 
 data GameMode = NormalMode | HardMode | SuperHardMode
 
-data BoardQuery a
+data BoardQuery a = NewGame GameSettings a
 
 data GameEnd = GameWin Int
              | GameLoss Word
@@ -58,15 +58,18 @@ type BoardState =
 
 type Dictionary = Trie Letter String
 
+newBoardState :: GameSettings -> BoardState
+newBoardState gameSettings =
+    { guessState: Seq.empty
+    , typingWord: Seq.empty
+    , lastWordBad: false
+    , gameOver: false
+    , gameSettings
+    }
+
 board :: forall m. Dictionary -> H.Component BoardQuery GameSettings BoardOut m
 board dict = H.mkComponent
-    { initialState: \gameSettings ->
-        { guessState: Seq.empty
-        , typingWord: Seq.empty
-        , lastWordBad: false
-        , gameOver: false
-        , gameSettings
-        }
+    { initialState: newBoardState
     , render: \boardState ->
         HH.div [HU.classProp "gameBoard"]
           [ renderBoardGrid boardState
@@ -76,6 +79,8 @@ board dict = H.mkComponent
           ]
     , eval: H.mkEval $ H.defaultEval
         { handleAction = handleActionBoard dict
+        , handleQuery = case _ of
+            NewGame gs r -> Just r <$ put_ (newBoardState gs)
         }
     }
 
