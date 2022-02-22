@@ -3,8 +3,8 @@
     "postinstall": "spago install",
     "build": "spago build",
     "clean": "rm -rf node_modules output .spago dist/* *.lock",
-    "bundle": "spago bundle-app --main Main --to dist/app.js && parcel build assets/index.pug -d _site --public-url ./ --no-content-hash --no-minify",
-    "deploy": "spago bundle-app --main Main --to dist/app.js && parcel build assets/index.pug -d _site --public-url ./ --no-source-maps --no-minify --no-content-hash && jle-update-gh-pages _site && git push origin master gh-pages"
+    "bundle": "spago bundle-app --main Main --to dist/app.js && parcel build assets/index.pug --dist-dir _site --public-url ./",
+    "deploy": "spago bundle-app --main Main --to dist/app.js && parcel build assets/index.pug --dist-dir _site --public-url ./ --no-source-maps && jle-update-gh-pages _site && git push origin master gh-pages"
   },
   "devDependencies": {
     "@parcel/transformer-pug": "^2.3.1",
@@ -21,11 +21,12 @@
   },
   "dependencies": {
     "jstransformer-markdown-it": "^2.1.0",
-    "marked": "^0.7.0"
+    "marked": "^0.7.0",
+    "purs": "^0.3.0"
   },
   "staticFiles": {
     "staticPath": "public",
     "watcherGlob": "**"
   },
-  "homepage": "https://pordle.jle.im"
+  "homepage": "https://purdle.jle.im"
 }
