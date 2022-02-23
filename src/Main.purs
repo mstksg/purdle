@@ -21,21 +21,21 @@ import Purdle.WordList
 import Data.Either
 import Web.DOM.ParentNode as DOM
 
+-- test with MOUTH:
+-- least, trunk, pouty, mouth
+-- try: cling
+-- pouty, milks, grill, cling
+-- bad: payer
+-- leaps, pater, paper, payer
+-- bad: olden
+-- peats, morne, felon
 main :: Effect Unit
 main = HA.runHalogenAff do
   _         <- HA.awaitBody
   container <- HA.selectElement (DOM.QuerySelector "#ui")
-  dict      <- fetchWordList >>= case _ of
-    Left  e  -> liftEffect $ throwException (error "#ui not found")
-    Right wl -> pure $ wordListToDictionary wl
+  initWord  <- liftEffect randomAnswer
+  -- let initWord = mkV5 P A Y E R
+  -- let initWord = mkV5 O L D E N
   case container of
     Nothing   -> liftEffect $ throwException (error "#ui not found")
-    Just cont -> runUI (UI.mainComponent initialDict) unit cont
-
-initialDict :: Dictionary
-initialDict = Trie.fromMap $ Map.fromFoldable $ map reshape $
-    [ mkV5 H E L L O
-    , mkV5 H E L P S
-    ]
-  where
-    reshape wd = Tuple (List.fromFoldable wd) wd
+    Just cont -> runUI (UI.mainComponent defaultDictionary) initWord cont

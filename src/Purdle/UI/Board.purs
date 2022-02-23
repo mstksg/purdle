@@ -88,7 +88,7 @@ renderBoardGrid boardState = HH.ul [HU.classProp "gameBoard-grid"] $
   Array.fromFoldable $
     flip map (layoutGrid boardState) \{isEntry, boxes} ->
       HH.li [HU.classProp $ "gameBoard-grid-row "
-                       <> isWrongClass boardState.lastWordBad
+                       <> if isEntry then isWrongClass boardState.lastWordBad else ""
             ]
         [ HH.ul [HU.classProp "gameBoard-grid-row-list"] $
             Array.fromFoldable $
@@ -112,9 +112,9 @@ handleActionBoard
 handleActionBoard dict act = do
   gameIsOver <- gets \bs -> bs.gameOver
   unless gameIsOver case act of
-    WPQInProgress w -> modify_ \bs -> bs { typingWord = w }
+    WPQInProgress w -> modify_ \bs -> bs { typingWord = w, lastWordBad = false }
     WPQSubmit w -> do
-      boardState <- modify \bs -> bs { lastWordBad = false }
+      boardState <- get
       let summary = defer \_ -> colorSummary
             { goalWord: boardState.gameSettings.goalWord
             , guessState: boardState.guessState
@@ -142,7 +142,10 @@ handleActionBoard dict act = do
            traverse_ (H.raise <<< BOToast) es
            modify_ \bs -> bs { lastWordBad = true }
         Right gs -> do
-          bs <- modify \bs -> bs { guessState = bs.guessState `Seq.snoc` gs }
+          bs <- modify \bs -> bs
+            { guessState = bs.guessState `Seq.snoc` gs
+            , lastWordBad = false
+            }
           _ <- H.query _wordPicker unit $ WPQReset unit
           let colorMap = letterColors
                 { goalWord: bs.gameSettings.goalWord

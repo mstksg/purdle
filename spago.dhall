@@ -24,10 +24,8 @@ You can edit this file as you like.
   , "exceptions"
   , "web-dom"
   , "bifunctors"
-  , "affjax"
-  , "aff"
-  , "http-methods"
   , "strings"
+  , "random"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

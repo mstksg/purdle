@@ -3,20 +3,25 @@ module Purdle.Summary where
 
 import Control.Apply
 import Data.FoldableWithIndex
+import Data.Either
 import Control.Monad.State
+import Undefined
 import Data.Foldable
 import Data.Letter
 import Data.List.Lazy as List
-import Data.Map (Map)
+import Data.Map (Map, SemigroupMap(..))
 import Data.Map as Map
+import Data.List.Lazy (List)
 import Data.Maybe
 import Data.Maybe.First
 import Data.List.Lazy.NonEmpty as NE
 import Data.Monoid.Additive
-import Data.Newtype
+import Data.Newtype hiding (traverse)
 import Data.Ord.Max
 import Data.PositiveInt
 import Data.Set (Set)
+import Data.Set.NonEmpty (NonEmptySet)
+import Data.Set.NonEmpty as NonEmptySet
 import Data.Set as Set
 import Data.Traversable
 import Data.Tuple
@@ -37,55 +42,85 @@ letterColors {goalWord, guessState} = Map.fromFoldableWith (<>) $
       where
         res = evalGuess goalWord guess
 
+data PositionSummary = PosForbid  (Set Letter)  -- ^ what it cannot be
+                     | PosRequire Letter        -- ^ what it must be
+
+instance Semigroup PositionSummary where
+    append = case _ of
+      PosForbid ys -> case _ of
+        PosForbid ys' -> PosForbid (ys <> ys')
+        PosRequire g  -> PosRequire g
+      PosRequire l -> const (PosRequire l)
+
+newtype FreqRange = FreqRange { isExact :: Boolean, limit :: NonNegativeInt }
+
+derive instance Newtype FreqRange _
+
+instance Semigroup FreqRange where
+    append (FreqRange r1) (FreqRange r2) = FreqRange
+      { isExact: r1.isExact || r2.isExact
+      , limit: max r1.limit r2.limit  -- should be the same if both are isExact
+      }
+
+addFreqRange :: FreqRange -> FreqRange -> FreqRange
+addFreqRange (FreqRange r1) (FreqRange r2) = FreqRange
+    { isExact: r1.isExact || r2.isExact
+    , limit: r1.limit <> r2.limit
+    }
+
+sumFreqs :: List FreqRange -> Maybe FreqRange
+sumFreqs xs = case List.step xs of
+    List.Nil -> Nothing
+    List.Cons y ys -> Just (foldl addFreqRange y ys)
+
 -- hm...blacks and yellowCounts have to be disjoint.
 type ColorSummary =
-    { blacks          :: Set Letter
-    , yellowCounts    :: Map Letter (Max PositiveInt)
-    , yellowPositions :: V5 (Set Letter)
-    , greens          :: V5 (First Letter)
+    { freqs     :: Map Letter FreqRange
+    , positions :: V5 PositionSummary
     }
 
 colorSummary
     :: GameInfo
     -> ColorSummary
 colorSummary ginf =
-    { blacks
-    , yellowCounts: summary.yellowCounts
-    , yellowPositions: map _.yellows positions
-    , greens: map _.greens positions
+    { freqs: summary.freqs
+    , positions
     }
   where
     summary = letterSummary ginf
     Tuple blacks positions = for summary.positions \summ ->
-      Tuple summ.blacks
-        { yellows: summ.yellows
-        , greens: summ.greens
-        }
+      Tuple summ.blacks $
+        case summ.greens of
+          First (Just g) -> PosRequire g
+          First Nothing  -> PosForbid summ.yellows
 
 type LetterSummary =
-    { positions    :: V5 { blacks :: Set Letter, yellows :: Set Letter, greens :: First Letter }
-    , yellowCounts :: Map Letter (Max PositiveInt)
+    { positions :: V5 { blacks :: Set Letter, yellows :: Set Letter, greens :: First Letter }
+    , freqs     :: Map Letter FreqRange
     }
 
 letterSummary
     :: GameInfo
     -> LetterSummary
 letterSummary {goalWord, guessState} = summary
-    { yellowCounts = unwrap summary.yellowCounts
+    { freqs = unwrap summary.freqs
     }
   where
+    blackLetter l = SemigroupMap $ Map.singleton l $
+      List.singleton $ FreqRange { isExact: true, limit: Nothing }
+    seenLetter l = SemigroupMap $ Map.singleton l $
+      List.singleton $ FreqRange { isExact: false, limit: Just positiveOne }
     evalLetter l = case _ of
-      NotInWord -> Tuple mempty $ emptySpot { blacks  = Set.singleton l }
-      WrongPos  -> Tuple (Map.SemigroupMap (Map.singleton l (Additive one))) $
-                     emptySpot { yellows = Set.singleton l }
-      RightPos  -> Tuple mempty $ emptySpot { greens  = First (Just l)  }
+      NotInWord -> Tuple (blackLetter l) $ emptySpot { blacks  = Set.singleton l }
+      WrongPos  -> Tuple (seenLetter l)  $ emptySpot { yellows = Set.singleton l }
+      RightPos  -> Tuple (seenLetter l)  $ emptySpot { greens  = First (Just l)  }
     summary = foldMap go guessState
     emptySpot :: { blacks :: Set Letter, yellows :: Set Letter, greens :: First Letter }
     emptySpot = mempty
-    go guess = { positions, yellowCounts: map (Max <<< unwrap) yellowSums }
+    go guess = { positions, freqs: SemigroupMap $ Map.mapMaybe sumFreqs freqSums }
       where
-        res = evalGuess goalWord guess
-        Tuple yellowSums positions = sequence (lift2 evalLetter guess res)
+        res       = evalGuess goalWord guess
+        Tuple (SemigroupMap freqSums) positions = sequence (lift2 evalLetter guess res)
 
 gameWon :: GameInfo -> Boolean
 gameWon {goalWord, guessState} = List.any (_ == goalWord) guessState
@@ -118,71 +153,91 @@ showHardModeErrors { greenNotUsed, yellowNotUsed } =
     yellowErrors = map (\(Tuple l i) -> "Guess missing " <> show (unPositive i) <> "x " <> show l)
                  $ Map.toUnfoldable yellowNotUsed
 
-
 validHardMode :: ColorSummary -> Word -> HardModeErrors
-validHardMode {yellowCounts, greens} guess =
+validHardMode { freqs, positions } guess =
     { greenNotUsed, yellowNotUsed }
   where
-    go :: Letter -> First Letter -> State (Map Letter PositiveInt) (Maybe Letter)
-    go gu isGreen = case unwrap isGreen of
-      Nothing -> Nothing <$ modify_ (Map.update decrementPositive gu)
-      Just gr
-        | gu == gr  -> pure Nothing
-        | otherwise -> pure (Just gr)
-    Tuple greenNotUsed yellowNotUsed =
-        runState (sequence (lift2 go guess greens)) (map unwrap yellowCounts)
+    go :: Letter -> PositionSummary -> State (Map Letter PositiveInt) (Maybe Letter)
+    go gu pos = do
+      modify_ (Map.update decrementPositive gu)
+      pure case pos of
+        PosForbid _   -> Nothing
+        PosRequire gr
+          | gu == gr  -> Nothing
+          | otherwise -> Just gr
+    Tuple greenNotUsed rawYellowNotUsed =
+        runState (sequence (lift2 go guess positions))
+                 (Map.mapMaybe (_.limit <<< unwrap) freqs)
+    -- get rid of double-counted
+    yellowNotUsed = foldl
+      (\mp -> case _ of
+          Nothing -> mp
+          Just l  -> Map.update decrementPositive l mp
+      )
+      rawYellowNotUsed
+      greenNotUsed
 
-data PositionError = NeedsGreen Letter | HasYellow Letter
+data PositionError = IsRequired Letter | IsForbidden Letter
 
 type SuperHardModeErrors =
-    { positionErrors :: V5 (Maybe PositionError)
-    , yellowNotUsed  :: Map Letter PositiveInt
-    , blacksUsed     :: Set Letter
+    { positionErrors  :: V5 (Maybe PositionError)
+    , frequencyErrors :: Map Letter (Either PositiveInt PositiveInt)
     }
 
 superHardModeNoErrors :: SuperHardModeErrors -> Boolean
 superHardModeNoErrors = isJust <<< showSuperHardModeErrors
 
 showSuperHardModeErrors :: SuperHardModeErrors -> Maybe (NE.NonEmptyList String)
-showSuperHardModeErrors {positionErrors, yellowNotUsed, blacksUsed} =
-    NE.fromList $ yellowErrors <> blackErrors
+showSuperHardModeErrors {positionErrors, frequencyErrors} =
+    NE.fromList $ posErrors <> freqErrors
   where
     posErrors = List.catMaybes $
       List.zipWith (\i -> map case _ of
-                        NeedsGreen l -> cardinalize i <> " letter must be " <> show l
-                        HasYellow  l -> cardinalize i <> " letter must not be " <> show l
+                        IsRequired  l -> cardinalize i <> " letter must be " <> show l
+                        IsForbidden l -> cardinalize i <> " letter must not be " <> show l
                    )
         (List.iterate (_ + 1) 1)
         (List.fromFoldable positionErrors)
-    yellowErrors = map (\(Tuple l i) -> "Guess missing " <> show (unPositive i) <> "x " <> show l)
-                 $ Map.toUnfoldable yellowNotUsed
-    blackErrors = map (\l -> "Cannot use " <> show l) $ List.fromFoldable blacksUsed
+    showFreqErrors (Tuple l e) = case e of
+      Left  i -> "Used " <> show (unPositive i) <> "x too many " <> show l
+      Right i -> "Missing " <> show (unPositive i) <> "x " <> show l
+    freqErrors = map showFreqErrors (Map.toUnfoldable frequencyErrors)
+
+-- data PositionError = IsRequired Letter | IsForbidden Letter
 
 validSuperHardMode :: ColorSummary -> Word -> SuperHardModeErrors
-validSuperHardMode {blacks, yellowCounts, yellowPositions, greens} guess =
-    { positionErrors, yellowNotUsed, blacksUsed }
+validSuperHardMode {freqs, positions} guess =
+    { positionErrors, frequencyErrors }
   where
     go  :: Letter
-        -> First Letter
-        -> Set Letter
-        -> State {yellowNotUsed :: Map Letter PositiveInt, blacksUsed :: Set Letter} (Maybe PositionError)
-    go gu isGreen yellowsHere = case unwrap isGreen of
-      Nothing
-        | gu `Set.member` blacks -> do
-            modify_ $ \errs ->
-              errs { blacksUsed = Set.insert gu errs.blacksUsed }
-            pure Nothing
-        | otherwise              -> do
-            modify_ $ \errs -> errs
-              { yellowNotUsed = Map.update decrementPositive gu errs.yellowNotUsed }
-            pure if gu `Set.member` yellowsHere
-              then Just (HasYellow gu)
-              else Nothing
-      Just gr
-        | gu == gr  -> pure Nothing
-        | otherwise -> pure (Just (NeedsGreen gr))
-    Tuple positionErrors {yellowNotUsed, blacksUsed} =
+        -> PositionSummary
+        -> State (Map Letter Int) (Maybe PositionError)
+    go gu pos = do
+      modify_ $ Map.update (Just <<< (_ - 1)) gu
+      pure case pos of
+        PosForbid forbs
+          | gu `Set.member` forbs -> Just $ IsForbidden gu
+          | otherwise             -> Nothing
+        PosRequire gr
+          | gu == gr  -> Nothing
+          | otherwise -> Just $ IsRequired gr
+    Tuple positionErrors leftoverFreqs =
         runState
-            (sequence (lift3 go guess greens yellowPositions))
-            { yellowNotUsed: map unwrap yellowCounts, blacksUsed: Set.empty }
+            (sequence (lift2 go guess positions))
+            (map (unNonNegative <<< _.limit <<< unwrap) freqs)
+    rawFrequencyErrors = Map.catMaybes $
+      Map.intersectionWith
+        (\(FreqRange fr) -> if fr.isExact then classifyInt else map Right <<< toPositive)
+        freqs
+        leftoverFreqs
+    -- get rid of double-counted
+    frequencyErrors = foldl
+        (\mp -> case _ of
+            Nothing              -> mp
+            Just (IsForbidden l) -> mp
+            Just (IsRequired l)  -> 
+              Map.update (traverse decrementPositive) l mp
+        )
+        rawFrequencyErrors
+        positionErrors
 

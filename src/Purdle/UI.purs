@@ -36,22 +36,16 @@ import Type.Proxy
 import Undefined
 
 
-mainComponent :: forall q i o m. MonadEffect m => Dictionary -> H.Component q i o m
+mainComponent :: forall q o m. MonadEffect m => Dictionary -> H.Component q Word o m
 mainComponent dict = H.mkComponent
-    { initialState: const unit
-    , render: \_ -> HH.slot _board unit (board dict) initialSettings identity
+    { initialState: \w -> { gameMode: SuperHardMode, goalWord: w, guessLimit: 6 }
+    , render: \settings -> HH.slot _board unit (board dict) settings identity
     , eval: H.mkEval $ H.defaultEval
         { handleAction = case _ of
             BOToast str -> liftEffect $ Console.log str
             BOEndGame i -> liftEffect $ Console.log "game over"
         }
     }
-  where
-    initialSettings =
-      { gameMode: NormalMode
-      , goalWord: mkV5 H E L L O
-      , guessLimit: 6
-      }
 
 _board :: Proxy "board"
 _board = Proxy

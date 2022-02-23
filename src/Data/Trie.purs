@@ -27,20 +27,14 @@ lookup ks (Trie tr) = case List.step ks of
 empty :: forall k v. Trie k v
 empty = Trie { here: Nothing, there: Map.empty }
 
-fromMapFoldable :: forall f k v. Foldable f => Ord k => Map (f k) v -> Trie k v
-fromMapFoldable = fromMap
-              <<< (Map.fromFoldable :: List (Tuple (List k) v) -> Map (List k) v)
-              <<< map (lmap List.fromFoldable)
-              <<< Map.toUnfoldableUnordered
-
-fromMap :: forall k v. Ord k => Map (List k) v -> Trie k v
-fromMap mp = Trie {here, there}
+fromFoldable :: forall f k v. Foldable f => Ord k => f (Tuple (List k) v) -> Trie k v
+fromFoldable mp = Trie {here, there}
   where
     -- here = Nothing
-    Tuple (First here) (Map.SemigroupMap thereList) = flip foldMapWithIndex mp \ks v ->
+    Tuple (First here) (Map.SemigroupMap thereList) = flip foldMap mp \(Tuple ks v) ->
       case List.step ks of
         List.Nil -> Tuple (First (Just v)) mempty
         List.Cons k ks' -> Tuple mempty $ Map.SemigroupMap $
           Map.singleton k $
             List.singleton $ Tuple ks' v
-    there = map (\ls -> defer \_ -> fromMap (Map.fromFoldable ls)) thereList
+    there = map (\ls -> defer \_ -> fromFoldable ls) thereList

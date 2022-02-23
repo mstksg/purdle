@@ -4,7 +4,8 @@ module Purdle.Evaluate where
 import Control.Apply
 import Control.Monad.State
 import Data.Letter
-import Data.Map (Map)
+import Data.Map (Map, SemigroupMap(..))
+import Data.Newtype
 import Data.Map as Map
 import Data.Maybe
 import Data.PositiveInt
@@ -21,6 +22,12 @@ data LetterEval = NotInWord
 derive instance Eq LetterEval
 derive instance Ord LetterEval
 
+instance Show LetterEval where
+    show = case _ of
+      NotInWord -> "NotInWord"
+      WrongPos  -> "WrongPos"
+      RightPos  -> "RightPos"
+
 instance Semigroup LetterEval where
     append = max
 
@@ -29,11 +36,16 @@ instance Monoid LetterEval where
 
 -- | Goal and guess
 evalGuess :: Word -> Word -> V5 LetterEval
-evalGuess goal guess = evalState (sequence (lift2 seekColors goal guess)) yellowFreqs
+evalGuess goal guess = evalState (sequence (lift2 seekColors goal guess)) (unwrap yellowFreqs)
   where
-    yellowFreqs :: Map Letter PositiveInt
-    yellowFreqs = Map.fromFoldableWith (+) $
-      lift2 (\gl gu -> Tuple gl (if gl == gu then zero else one)) goal guess
+    yellowFreqs :: SemigroupMap Letter PositiveInt
+    yellowFreqs = fold $
+      lift2 (\gl gu -> if gl == gu
+                then mempty
+                else SemigroupMap $ Map.singleton gl positiveOne
+            )
+        goal
+        guess
     seekColors :: Letter -> Letter -> State (Map Letter PositiveInt) LetterEval
     seekColors gl gu
       | gl == gu  = pure RightPos
@@ -43,3 +55,8 @@ evalGuess goal guess = evalState (sequence (lift2 seekColors goal guess)) yellow
             Nothing -> pure NotInWord
             Just fr -> WrongPos <$ modify (Map.update decrementPositive gu)
 
+showLetterEval :: LetterEval -> String
+showLetterEval = case _ of
+    NotInWord -> "B"
+    WrongPos  -> "Y"
+    RightPos  -> "G"

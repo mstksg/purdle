@@ -7,6 +7,7 @@
     "deploy": "spago bundle-app --main Main --to dist/app.js && parcel build assets/index.pug --dist-dir _site --public-url ./ --no-source-maps && jle-update-gh-pages _site && git push origin master gh-pages"
   },
   "devDependencies": {
+    "@parcel/core": "^2.3.2",
     "@parcel/transformer-pug": "^2.3.2",
     "@parcel/transformer-sass": "^2.3.2",
     "cssnano": "^5.0.17",
@@ -16,8 +17,10 @@
     "postcss": "^8.4.6",
     "pug": "^3.0.2",
     "purescript": "^0.14.5",
+    "querystring-es3": "^0.2.1",
     "sass": "^1.49.8",
-    "spago": "^0.20.7"
+    "spago": "^0.20.7",
+    "url": "^0.11.0"
   },
   "dependencies": {
     "jstransformer-markdown-it": "^2.1.0",
