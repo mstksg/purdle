@@ -25,7 +25,6 @@
   "dependencies": {
     "jstransformer-markdown-it": "^2.1.0",
     "marked": "^4.0.12",
-    "purs": "^0.3.0",
     "xhr2": "^0.2.1"
   },
   "staticFiles": {
