@@ -4,7 +4,8 @@
     "build": "spago build",
     "clean": "rm -rf node_modules output .spago dist/* *.lock",
     "bundle": "spago bundle-app --main Main --to dist/app.js && parcel build assets/index.pug --dist-dir _site --public-url ./",
-    "deploy": "spago bundle-app --main Main --to dist/app.js && parcel build assets/index.pug --dist-dir _site --public-url ./ --no-source-maps && jle-update-gh-pages _site && git push origin master gh-pages"
+    "deploy": "spago bundle-app --main Main --to dist/app.js && parcel build assets/index.pug --dist-dir _site --public-url ./ --no-source-maps && jle-update-gh-pages _site && git push origin master gh-pages",
+    "dev": "parcel assets/index.pug"
   },
   "devDependencies": {
     "@parcel/core": "^2.3.2",
