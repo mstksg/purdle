@@ -11,33 +11,51 @@ body {
   background: #f5f6f9;
 }
 
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
 div.gameBoard {
-    max-width: $width;
-    margin: 0 auto;
+  display: flex;
+  flex-flow: column;
+  align-items: center;
+  gap: 2rem;
 }
 
 ul.gameBoard-grid {
-    width: 80%;
-    margin: 0 auto;
-    padding: 1em;
-    list-style: none;
+  display: grid;
+  gap: 1rem;
 }
 
 ul.gameBoard-grid-row-list {
-    margin: 0 auto;
-    padding: 0;
-    list-style: none;
-    display: flex;
+  display: grid;
+  grid-auto-flow: column;
+  gap: 1rem;
 }
 
 li.gameBoard-grid-item {
-    margin: 1%;
-    padding: 1%;
-    display: inline-block;
-    width: 15%;
-    aspect-ratio: 1;
-    border: 2px solid;
-    text-align: center;
+  border: 2px solid;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2rem;
+  width: 4rem;
+  aspect-ratio: 1;
+}
+
+.gameBoard-keyboard .keyboard {
+  display: flex;
+  flex-flow: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gameBoard-keyboard .keyboard-row {
+  display: flex;
+  flex-flow: row;
+  gap: 0.5rem;
 }
 
 li.eval-right-pos {
