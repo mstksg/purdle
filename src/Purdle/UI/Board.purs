@@ -16,6 +16,7 @@ import Data.Sequence as Seq
 import Data.Trie (Trie)
 import Data.Trie as Trie
 import Data.V5
+import Effect.Class (class MonadEffect)
 import Halogen as H
 import Halogen.Aff.Util as HU
 import Halogen.HTML as HH
@@ -66,7 +67,7 @@ newBoardState gameSettings =
     , gameSettings
     }
 
-board :: forall m. Dictionary -> H.Component BoardQuery GameSettings BoardOut m
+board :: forall m. MonadEffect m => Dictionary -> H.Component BoardQuery GameSettings BoardOut m
 board dict = H.mkComponent
     { initialState: newBoardState
     , render: \boardState ->

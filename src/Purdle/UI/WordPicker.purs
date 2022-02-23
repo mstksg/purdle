@@ -7,6 +7,7 @@ import Data.Map as Map
 import Data.Maybe
 import Data.Sequence (Seq)
 import Data.Sequence as Seq
+import Effect.Class (class MonadEffect)
 import Halogen as H
 import Halogen.HTML as HH
 import Prelude
@@ -19,7 +20,7 @@ data WordPickerQuery a = WPQSetColors ColorMap a
 data WordPickerOut = WPQInProgress (Seq Letter)
                    | WPQSubmit (Seq Letter)
 
-wordPicker :: forall m. Int -> H.Component WordPickerQuery (Seq Letter) WordPickerOut m
+wordPicker :: forall m. MonadEffect m => Int -> H.Component WordPickerQuery (Seq Letter) WordPickerOut m
 wordPicker wordSize = H.mkComponent
     { initialState: Seq.fromFoldable
     , render: \_ ->
