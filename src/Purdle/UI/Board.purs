@@ -7,7 +7,6 @@ import Data.Array as Array
 import Data.Either
 import Data.Foldable
 import Data.Lazy
-import Purdle.UI.Keyboard
 import Data.Letter
 import Data.List.Lazy as List
 import Data.Maybe
@@ -16,6 +15,7 @@ import Data.Sequence as Seq
 import Data.Trie (Trie)
 import Data.Trie as Trie
 import Data.V5
+import Effect.Class
 import Halogen as H
 import Halogen.Aff.Util as HU
 import Halogen.HTML as HH
@@ -29,7 +29,9 @@ import Prelude
 import Purdle.Evaluate
 import Purdle.Summary
 import Purdle.Types
+import Purdle.UI.Keyboard
 import Purdle.UI.WordPicker
+import Purdle.WordList
 import Type.Proxy
 import Undefined
 
@@ -41,6 +43,7 @@ data GameEnd = GameWin Int
              | GameLoss Word
 
 data BoardOut = BOToast String
+              | BOMadeGuess Word Int (V5 LetterEval)
               | BOEndGame GameEnd
 
 type GameSettings =
@@ -54,7 +57,7 @@ type BoardState =
     , guessState   :: GuessState
     , typingWord   :: Seq Letter
     , lastWordBad  :: Boolean
-    , gameOver     :: Boolean
+    , gameOver     :: Maybe GameEnd
     }
 
 newBoardState :: GameSettings -> BoardState
@@ -62,12 +65,12 @@ newBoardState gameSettings =
     { guessState: Seq.empty
     , typingWord: Seq.empty
     , lastWordBad: false
-    , gameOver: false
+    , gameOver: Nothing
     , gameSettings
     }
 
-board :: forall m. Dictionary -> H.Component BoardQuery GameSettings BoardOut m
-board dict = H.mkComponent
+board :: forall m. MonadEffect m => H.Component BoardQuery GameSettings BoardOut m
+board = H.mkComponent
     { initialState: newBoardState
     , render: \boardState ->
         HH.div [HU.classProp "gameBoard"]
@@ -77,7 +80,7 @@ board dict = H.mkComponent
               ]
           ]
     , eval: H.mkEval $ H.defaultEval
-        { handleAction = handleActionBoard dict
+        { handleAction = handleWordPickerOut
         , handleQuery = case _ of
             NewGame gs r -> Just r <$ put (newBoardState gs)
         }
@@ -104,13 +107,12 @@ renderBoardGrid boardState = HH.ul [HU.classProp "gameBoard-grid"] $
                     []
         ]
 
-handleActionBoard
+handleWordPickerOut
     :: forall m.
-       Dictionary
-    -> WordPickerOut
-    -> H.HalogenM BoardState WordPickerOut (wordPicker :: H.Slot WordPickerQuery WordPickerOut Unit) BoardOut m Unit
-handleActionBoard dict act = do
-  gameIsOver <- gets \bs -> bs.gameOver
+       WordPickerOut
+    -> H.HalogenM BoardState _ (wordPicker :: H.Slot WordPickerQuery WordPickerOut Unit) BoardOut m Unit
+handleWordPickerOut act = do
+  gameIsOver <- gets \bs -> isJust bs.gameOver
   unless gameIsOver case act of
     WPQInProgress w -> modify_ \bs -> bs { typingWord = w, lastWordBad = false }
     WPQSubmit w -> do
@@ -125,7 +127,7 @@ handleActionBoard dict act = do
               Just w  -> Right w
             let goodHardMode = flip validHardMode wVec <$> summary
                 goodSuperHardMode = flip validSuperHardMode wVec <$> summary
-            case List.fromFoldable w `Trie.lookup` dict of
+            case List.fromFoldable w `Trie.lookup` defaultDictionary of
               Nothing -> Left ["Not in word list: " <> showWord wVec]
               Just _  -> Right unit
             case boardState.gameSettings.gameMode of
@@ -142,6 +144,8 @@ handleActionBoard dict act = do
            traverse_ (H.raise <<< BOToast) es
            modify_ \bs -> bs { lastWordBad = true }
         Right gs -> do
+          let newLength = Seq.length boardState.guessState + 1
+          H.raise (BOMadeGuess gs newLength (evalGuess boardState.gameSettings.goalWord gs))
           bs <- modify \bs -> bs
             { guessState = bs.guessState `Seq.snoc` gs
             , lastWordBad = false
@@ -154,12 +158,14 @@ handleActionBoard dict act = do
           _ <- H.query _wordPicker unit $ WPQSetColors (map leToColor colorMap) unit
           if (gs == boardState.gameSettings.goalWord)
             then do
-              H.raise $ BOEndGame (GameWin (Seq.length boardState.guessState + 1))
-              modify_ \bs -> bs { gameOver = true }
+              let gw = GameWin newLength
+              H.raise $ BOEndGame gw
+              modify_ \bs -> bs { gameOver = Just gw }
             else
-              when (Seq.length boardState.guessState + 1 >= boardState.gameSettings.guessLimit) $ do
-                H.raise $ BOEndGame (GameLoss (boardState.gameSettings.goalWord))
-                modify_ \bs -> bs { gameOver = true }
+              when (newLength >= boardState.gameSettings.guessLimit) $ do
+                let gl = GameLoss (boardState.gameSettings.goalWord)
+                H.raise $ BOEndGame gl
+                modify_ \bs -> bs { gameOver = Just gl }
 
 evalClass :: LetterEval -> String
 evalClass = case _ of

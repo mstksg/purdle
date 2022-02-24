@@ -203,8 +203,6 @@ showSuperHardModeErrors {positionErrors, frequencyErrors} =
       Right i -> "Missing " <> show (unPositive i) <> "x " <> show l
     freqErrors = map showFreqErrors (Map.toUnfoldable frequencyErrors)
 
--- data PositionError = IsRequired Letter | IsForbidden Letter
-
 validSuperHardMode :: ColorSummary -> Word -> SuperHardModeErrors
 validSuperHardMode {freqs, positions} guess =
     { positionErrors, frequencyErrors }

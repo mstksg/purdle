@@ -13,6 +13,7 @@ import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Exception (throwException, error)
 import Halogen.Aff as HA
+import Effect.Console as Console
 import Halogen.VDom.Driver (runUI)
 import Prelude
 import Purdle.Types
@@ -34,8 +35,9 @@ main = HA.runHalogenAff do
   _         <- HA.awaitBody
   container <- HA.selectElement (DOM.QuerySelector "#ui")
   initWord  <- liftEffect randomAnswer
+  liftEffect $ Console.log (showWord initWord)
   -- let initWord = mkV5 P A Y E R
   -- let initWord = mkV5 O L D E N
   case container of
     Nothing   -> liftEffect $ throwException (error "#ui not found")
-    Just cont -> runUI (UI.mainComponent defaultDictionary) initWord cont
+    Just cont -> runUI UI.mainComponent initWord cont

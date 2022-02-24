@@ -1,4 +1,3 @@
-
 exports.allowedWordStringsMinusAnswers =
   ['aahed'
   ,'aalii'

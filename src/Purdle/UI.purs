@@ -26,6 +26,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.Query as HQ
 import Halogen.Util as HU
+import Effect
 import Prelude
 import Purdle.Evaluate
 import Purdle.Summary
@@ -36,16 +37,21 @@ import Type.Proxy
 import Undefined
 
 
-mainComponent :: forall q o m. MonadEffect m => Dictionary -> H.Component q Word o m
-mainComponent dict = H.mkComponent
+mainComponent :: forall q o m. MonadEffect m => H.Component q Word o m
+mainComponent = H.mkComponent
     { initialState: \w -> { gameMode: SuperHardMode, goalWord: w, guessLimit: 6 }
-    , render: \settings -> HH.slot _board unit (board dict) settings identity
+    , render: \settings -> HH.slot _board unit board settings identity
     , eval: H.mkEval $ H.defaultEval
         { handleAction = case _ of
-            BOToast str -> liftEffect $ Console.log str
-            BOEndGame i -> liftEffect $ Console.log "game over"
+            BOToast str -> liftEffect $ toast str
+            BOMadeGuess _ _ _ -> pure unit
+            BOEndGame e -> liftEffect $ toast $ case e of
+              GameWin i -> "Congrats!  Won in " <> show i <> " guesses."
+              GameLoss w -> showWord w
         }
     }
 
 _board :: Proxy "board"
 _board = Proxy
+
+foreign import toast :: String -> Effect Unit
