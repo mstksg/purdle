@@ -8,11 +8,15 @@ $width: 450px;
 // $breakpoint: get-breakpoint();
 
 body {
-  background: #f5f6f9;
-  color: black;
+    background: #f5f6f9;
+    color: black;
 }
 
-div.gameBoard {
+h2 {
+    text-align: center;
+}
+
+div.gameContainer {
     max-width: $width;
     margin: 0 auto;
 }
@@ -20,7 +24,7 @@ div.gameBoard {
 ul.gameBoard-grid {
     max-width: 350px;
     margin: 0 auto;
-    padding: 1em 0;
+    padding: 0.5em 0;
     list-style: none;
 }
 
@@ -60,6 +64,10 @@ li.invalid-guess {
 button {
     background-color: #ddd;
     color: black;
+    cursor: pointer;
+    user-select: none;
+    border: none;
+    font-size: 90%;
 }
 button.key-green {
     background-color: green;
@@ -75,18 +83,37 @@ div.keyboard {
     margin: 0 auto;
     text-align: center;
     width: 100%;
+    padding: 0.5em 0;
 }
 
 button.keyboard-key {
-    cursor: pointer;
-    user-select: none;
-    width: 2em;
+    width: 1.75em;
     height: 3em;
     margin: 0.1em;
-    border: none;
-    font-size: 90%;
+    height: 3em;
 }
 
 button.wide-key {
-    width: 4em;
+    width: 3.25em;
+}
+
+div.gameContainer-ui {
+    margin: 0 auto;
+    text-align: center;
+    width: 100%;
+    padding: 0.5em 0;
+}
+
+button.button-new-game {
+    height: 2.5em;
+    padding: 0 1em;
+    display: block;
+    margin: 0.5em auto;
+}
+
+select.gameMode-picker {
+    height: 2.5em;
+    padding: 0 1em;
+    display: block;
+    margin: 0.5em auto;
 }

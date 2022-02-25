@@ -38,6 +38,17 @@ import Undefined
 
 data GameMode = NormalMode | HardMode | SuperHardMode
 
+showGameMode :: GameMode -> String
+showGameMode = case _ of
+    NormalMode    -> "Normal Mode"
+    HardMode      -> "Hard Mode"
+    SuperHardMode -> "Super Hard Mode"
+
+gameModes :: Array GameMode
+gameModes = [NormalMode, HardMode, SuperHardMode]
+
+derive instance Eq GameMode
+
 data BoardQuery a = NewGame BoardSettings a
                   | FreezeGame a
 

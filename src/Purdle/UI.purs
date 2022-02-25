@@ -44,8 +44,8 @@ mainComponent = H.mkComponent
     , render: \gst -> HH.slot _board unit game gst identity
     , eval: H.mkEval $ H.defaultEval
         { handleAction = case _ of
-            GOToast str -> liftEffect $ toast str
-            GOGameOver e -> liftEffect $ toast $ case e of
+            GOToast str -> liftEffect $ toast 2500 str
+            GOGameOver e -> liftEffect $ toast 5000 $ case e of
               GameWin i -> "Congrats!  Won in " <> show i <> " guesses."
               GameLoss w -> showWord w
         }
@@ -54,4 +54,4 @@ mainComponent = H.mkComponent
 _game :: Proxy "game"
 _game = Proxy
 
-foreign import toast :: String -> Effect Unit
+foreign import toast :: Int -> String -> Effect Unit

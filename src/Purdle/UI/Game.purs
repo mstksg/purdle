@@ -55,6 +55,12 @@ data GameProgress =
 
 derive instance Eq GameProgress
 
+gpInProgress :: GameProgress -> Maybe PositiveInt
+gpInProgress = case _ of
+    GPInitialized  -> Nothing
+    GPInProgress i -> Just i
+    GPGameOver _   -> Nothing
+    
 instance Show GameProgress where
     show = case _ of
       GPInitialized -> "GPInitialized"
@@ -88,7 +94,18 @@ game = H.mkComponent
           [ HH.div [HU.classProp "gameContainer-board"]
               [ HH.slot _board unit board (toBoardSettings gst) GABoardOut ]
           , HH.div [HU.classProp "gameContainer-ui"] $ Array.catMaybes
-              [ guard (gst.gameProgress /= GPInitialized) $> HH.button
+              [ Just $ HH.select
+                  [ HU.classProp "ui-select gameMode-picker"
+                  , HP.disabled (isJust (gpInProgress gst.gameProgress))
+                  , HE.onSelectedIndexChange \i -> GAChangeMode $
+                      fromMaybe gst.gameMode (gameModes `Array.index` i)
+                  ]
+                  (flip map gameModes \gm ->
+                      HH.option
+                        [HP.selected (gm == gst.gameMode)]
+                        [HH.text (showGameMode gm)]
+                  )
+              , guard (gst.gameProgress /= GPInitialized) $> HH.button
                   [ HU.classProp "ui-key button-new-game"
                   , HP.type_ HP.ButtonButton
                   , HE.onClick \_ -> GANewGame
@@ -146,24 +163,6 @@ game = H.mkComponent
         , handleQuery = const (pure Nothing)
         }
     }
-
--- data BoardOut = BOToast String
---               | BOMadeGuess Word Int
-
---     { initialState: newBoardState
---     , render: \boardState ->
---         HH.div [HU.classProp "gameBoard"]
---           [ renderBoardGrid boardState
---           , HH.div [HU.classProp "gameBoard-keyboard"]
---               [ HH.slot _wordPicker unit (wordPicker 5) boardState.typingWord identity
---               ]
---           ]
---     , eval: H.mkEval $ H.defaultEval
---         { handleAction = handleWordPickerOut
---         , handleQuery = case _ of
---             NewGame gs r -> Just r <$ put (newBoardState gs)
---         }
---     }
 
 _board :: Proxy "board"
 _board = Proxy
