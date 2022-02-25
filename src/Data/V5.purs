@@ -20,6 +20,7 @@ newtype V5 a = V5
 
 derive instance Functor V5
 derive instance Eq a => Eq (V5 a)
+derive instance Ord a => Ord (V5 a)
 
 mkV5 :: forall a. a -> a -> a -> a -> a -> V5 a
 mkV5 x1 x2 x3 x4 x5 = V5 {x1, x2, x3, x4, x5}
@@ -55,6 +56,33 @@ instance Monoid a => Monoid (V5 a) where
     mempty = pure mempty
 
 data Ix5 = Ix5_0 | Ix5_1 | Ix5_2 | Ix5_3 | Ix5_4
+
+derive instance Eq Ix5
+derive instance Ord Ix5
+instance Show Ix5 where
+    show = case _ of
+      Ix5_0 -> "Ix5_0"
+      Ix5_1 -> "Ix5_1"
+      Ix5_2 -> "Ix5_2"
+      Ix5_3 -> "Ix5_3"
+      Ix5_4 -> "Ix5_4"
+
+v5Ixes :: V5 Ix5
+v5Ixes = V5
+    { x1: Ix5_0
+    , x2: Ix5_1
+    , x3: Ix5_2
+    , x4: Ix5_3
+    , x5: Ix5_4
+    }
+
+ixV5 :: forall a. Ix5 -> V5 a -> a
+ixV5 i (V5 v) = case i of
+    Ix5_0 -> v.x1
+    Ix5_1 -> v.x2
+    Ix5_2 -> v.x3
+    Ix5_3 -> v.x4
+    Ix5_4 -> v.x5
 
 v5FromList :: forall a. List a -> { res :: V5 (Maybe a), leftovers :: List a }
 v5FromList xs0 = { res, leftovers }

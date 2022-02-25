@@ -5,6 +5,8 @@ import Data.Foldable
 import Data.List.Lazy as List
 import Data.Map (Map)
 import Data.Map as Map
+import Data.Set (Set)
+import Data.Set as Set
 import Data.String as String
 import Data.Tuple
 import Prelude
@@ -23,6 +25,9 @@ allLetters =
   [ A , B , C , D , E , F , G , H , I , J , K , L , M
   , N , O , P , Q , R , S , T , U , V , W , X , Y , Z
   ]
+
+allLettersSet :: Set Letter
+allLettersSet = Set.fromFoldable allLetters
 
 letterChar :: Letter -> Char
 letterChar = case _ of

@@ -19,6 +19,21 @@ data Trie k v = Trie
     , there :: Map k (Lazy (Trie k v))
     }
 
+unfold
+    :: forall a k v. Ord k
+    => (a -> { here :: Maybe v, there :: Map k (Lazy a) })
+    -> a
+    -> Trie k v
+unfold f = go
+  where
+    go :: a -> Trie k v
+    go x = Trie
+        { here
+        , there: map (map go) there
+        }
+      where
+        {here, there} = f x
+
 lookup :: forall k v. Ord k => List k -> Trie k v -> Maybe v
 lookup ks (Trie tr) = case List.step ks of
     List.Nil        -> tr.here
@@ -38,3 +53,5 @@ fromFoldable mp = Trie {here, there}
           Map.singleton k $
             List.singleton $ Tuple ks' v
     there = map (\ls -> defer \_ -> fromFoldable ls) thereList
+
+

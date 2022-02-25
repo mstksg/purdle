@@ -1,14 +1,15 @@
 
 module Purdle.UI.Keyboard where
 
+import Control.Alternative
 import Control.Monad.State.Class
 import Data.Foldable
 import Data.Letter
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe
-import Effect.Class
 import Data.String as String
+import Effect.Class
 import Halogen as H
 import Halogen.Aff.Util as HU
 import Halogen.HTML as HH
@@ -114,5 +115,6 @@ processKeyEvent ke = case Keyboard.key ke of
     "Enter" -> Just EnterKey
     "Backspace" -> Just BackspaceKey
     ks -> LetterKey <$> do
-      k <- _.head <$> String.uncons ks
-      k `Map.lookup` lookupLetterMap
+      {head, tail} <- String.uncons ks
+      guard $ tail == ""
+      head `Map.lookup` lookupLetterMap

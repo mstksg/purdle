@@ -32,6 +32,7 @@ import Purdle.Summary
 import Purdle.Types
 import Purdle.UI.Keyboard
 import Purdle.UI.WordPicker
+import Purdle.Validate
 import Purdle.WordList
 import Type.Proxy
 import Undefined

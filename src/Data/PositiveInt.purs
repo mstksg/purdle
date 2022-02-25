@@ -21,6 +21,19 @@ instance Semigroup PositiveInt where
 positiveOne :: PositiveInt
 positiveOne = UnsafePositiveInt 1
 
+positiveTwo :: PositiveInt
+positiveTwo = UnsafePositiveInt 2
+
+positiveThree :: PositiveInt
+positiveThree = UnsafePositiveInt 3
+
+positiveFour :: PositiveInt
+positiveFour = UnsafePositiveInt 4
+
+positiveFive :: PositiveInt
+positiveFive = UnsafePositiveInt 5
+
+
 -- | Subtract by 1
 decrementPositive :: PositiveInt -> Maybe PositiveInt
 decrementPositive (UnsafePositiveInt x)
