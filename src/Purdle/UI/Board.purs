@@ -9,6 +9,7 @@ import Data.Foldable
 import Data.Lazy
 import Data.Letter
 import Data.List.Lazy as List
+import Data.Map as Map
 import Data.Maybe
 import Data.Sequence (Seq)
 import Data.Sequence as Seq
@@ -37,39 +38,36 @@ import Undefined
 
 data GameMode = NormalMode | HardMode | SuperHardMode
 
-data BoardQuery a = NewGame GameSettings a
-
-data GameEnd = GameWin Int
-             | GameLoss Word
+data BoardQuery a = NewGame BoardSettings a
+                  | FreezeGame a
 
 data BoardOut = BOToast String
-              | BOMadeGuess Word Int (V5 LetterEval)
-              | BOEndGame GameEnd
+              | BOMadeGuess Word
 
-type GameSettings =
+type BoardSettings =
     { gameMode   :: GameMode
     , goalWord   :: Word
     , guessLimit :: Int
     }
 
 type BoardState =
-    { gameSettings :: GameSettings
+    { boardSettings :: BoardSettings
     , guessState   :: GuessState
     , typingWord   :: Seq Letter
     , lastWordBad  :: Boolean
-    , gameOver     :: Maybe GameEnd
+    , gameActive   :: Boolean
     }
 
-newBoardState :: GameSettings -> BoardState
-newBoardState gameSettings =
+newBoardState :: BoardSettings -> BoardState
+newBoardState boardSettings =
     { guessState: Seq.empty
     , typingWord: Seq.empty
     , lastWordBad: false
-    , gameOver: Nothing
-    , gameSettings
+    , gameActive: true
+    , boardSettings
     }
 
-board :: forall m. MonadEffect m => H.Component BoardQuery GameSettings BoardOut m
+board :: forall m. MonadEffect m => H.Component BoardQuery BoardSettings BoardOut m
 board = H.mkComponent
     { initialState: newBoardState
     , render: \boardState ->
@@ -82,7 +80,13 @@ board = H.mkComponent
     , eval: H.mkEval $ H.defaultEval
         { handleAction = handleWordPickerOut
         , handleQuery = case _ of
-            NewGame gs r -> Just r <$ put (newBoardState gs)
+            NewGame gs r -> Just r <$ do
+               void $ H.query _wordPicker unit (WPQReset unit)
+               void $ H.query _wordPicker unit (WPQSetColors Map.empty unit)
+               put (newBoardState gs)
+            FreezeGame r -> Just r <$ do
+               void $ H.query _wordPicker unit (WPQReset unit)
+               modify_ (\bs -> bs { gameActive = false })
         }
     }
 
@@ -112,13 +116,13 @@ handleWordPickerOut
        WordPickerOut
     -> H.HalogenM BoardState _ (wordPicker :: H.Slot WordPickerQuery WordPickerOut Unit) BoardOut m Unit
 handleWordPickerOut act = do
-  gameIsOver <- gets \bs -> isJust bs.gameOver
-  unless gameIsOver case act of
+  isActive <- gets \bs -> bs.gameActive
+  when isActive case act of
     WPQInProgress w -> modify_ \bs -> bs { typingWord = w, lastWordBad = false }
     WPQSubmit w -> do
       boardState <- get
       let summary = defer \_ -> colorSummary
-            { goalWord: boardState.gameSettings.goalWord
+            { goalWord: boardState.boardSettings.goalWord
             , guessState: boardState.guessState
             }
           validatedGuess = do
@@ -130,7 +134,7 @@ handleWordPickerOut act = do
             case List.fromFoldable w `Trie.lookup` defaultDictionary of
               Nothing -> Left ["Not in word list: " <> showWord wVec]
               Just _  -> Right unit
-            case boardState.gameSettings.gameMode of
+            case boardState.boardSettings.gameMode of
               NormalMode -> Right unit
               HardMode   -> case showHardModeErrors (force goodHardMode) of
                 Nothing -> Right unit
@@ -144,28 +148,19 @@ handleWordPickerOut act = do
            traverse_ (H.raise <<< BOToast) es
            modify_ \bs -> bs { lastWordBad = true }
         Right gs -> do
-          let newLength = Seq.length boardState.guessState + 1
-          H.raise (BOMadeGuess gs newLength (evalGuess boardState.gameSettings.goalWord gs))
+          -- let newLength = Seq.length boardState.guessState + 1
+          H.raise (BOMadeGuess gs)
           bs <- modify \bs -> bs
             { guessState = bs.guessState `Seq.snoc` gs
             , lastWordBad = false
             }
           _ <- H.query _wordPicker unit $ WPQReset unit
           let colorMap = letterColors
-                { goalWord: bs.gameSettings.goalWord
+                { goalWord: bs.boardSettings.goalWord
                 , guessState: bs.guessState
                 }
           _ <- H.query _wordPicker unit $ WPQSetColors (map leToColor colorMap) unit
-          if (gs == boardState.gameSettings.goalWord)
-            then do
-              let gw = GameWin newLength
-              H.raise $ BOEndGame gw
-              modify_ \bs -> bs { gameOver = Just gw }
-            else
-              when (newLength >= boardState.gameSettings.guessLimit) $ do
-                let gl = GameLoss (boardState.gameSettings.goalWord)
-                H.raise $ BOEndGame gl
-                modify_ \bs -> bs { gameOver = Just gl }
+          pure unit
 
 evalClass :: LetterEval -> String
 evalClass = case _ of
@@ -190,14 +185,14 @@ data GridBox = EvalLetter LetterEval Letter
 
 layoutGrid :: BoardState -> Seq { isEntry :: Boolean, boxes :: V5 GridBox }
 layoutGrid boardState = Seq.fromFoldable $
-                        List.take boardState.gameSettings.guessLimit $
+                        List.take boardState.boardSettings.guessLimit $
         evalGrid
      <> (pickerGrid List.: List.repeat { isEntry: false, boxes: pure BlankBox })
   where
     evalGrid = flip map (List.fromFoldable boardState.guessState) \wd ->
       { isEntry: false
       , boxes: lift2 EvalLetter
-            (evalGuess boardState.gameSettings.goalWord wd)
+            (evalGuess boardState.boardSettings.goalWord wd)
             wd
       }
     pickerGrid =

@@ -28,6 +28,7 @@ You can edit this file as you like.
   , "random"
   , "web-uievents"
   , "web-html"
+  , "control"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

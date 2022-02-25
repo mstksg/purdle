@@ -32,26 +32,26 @@ import Purdle.Evaluate
 import Purdle.Summary
 import Purdle.Types
 import Purdle.UI.Board
+import Purdle.UI.Game
 import Purdle.UI.WordPicker
 import Type.Proxy
 import Undefined
 
-
 mainComponent :: forall q o m. MonadEffect m => H.Component q Word o m
 mainComponent = H.mkComponent
-    { initialState: \w -> { gameMode: SuperHardMode, goalWord: w, guessLimit: 6 }
-    , render: \settings -> HH.slot _board unit board settings identity
+    { initialState: \goalWord ->
+        { goalWord, gameMode: SuperHardMode, gameProgress: GPInitialized }
+    , render: \gst -> HH.slot _board unit game gst identity
     , eval: H.mkEval $ H.defaultEval
         { handleAction = case _ of
-            BOToast str -> liftEffect $ toast str
-            BOMadeGuess _ _ _ -> pure unit
-            BOEndGame e -> liftEffect $ toast $ case e of
+            GOToast str -> liftEffect $ toast str
+            GOGameOver e -> liftEffect $ toast $ case e of
               GameWin i -> "Congrats!  Won in " <> show i <> " guesses."
               GameLoss w -> showWord w
         }
     }
 
-_board :: Proxy "board"
-_board = Proxy
+_game :: Proxy "game"
+_game = Proxy
 
 foreign import toast :: String -> Effect Unit

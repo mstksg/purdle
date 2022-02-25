@@ -9,6 +9,7 @@ $width: 450px;
 
 body {
   background: #f5f6f9;
+  color: black;
 }
 
 div.gameBoard {
@@ -56,6 +57,10 @@ li.invalid-guess {
     background-color: red;
 }
 
+button {
+    background-color: #ddd;
+    color: black;
+}
 button.key-green {
     background-color: green;
 }

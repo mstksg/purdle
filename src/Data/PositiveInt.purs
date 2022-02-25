@@ -37,6 +37,13 @@ toPositive x
 
 type NonNegativeInt = Maybe PositiveInt
 
+toNonNegative :: Int -> Maybe NonNegativeInt
+toNonNegative i = case classifyInt i of
+    Nothing        -> Just Nothing
+    Just (Left _ ) -> Nothing
+    Just (Right i) -> Just (Just i)
+    
+
 decrementNonNegative :: NonNegativeInt -> Maybe NonNegativeInt
 decrementNonNegative = map decrementPositive
 
