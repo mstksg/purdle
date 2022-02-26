@@ -64,10 +64,10 @@ type BoardSettings =
 
 type BoardState =
     { boardSettings :: BoardSettings
-    , guessState   :: GuessState
-    , typingWord   :: Seq Letter
-    , lastWordBad  :: Boolean
-    , gameActive   :: Boolean
+    , guessState    :: GuessState
+    , typingWord    :: Seq Letter
+    , lastWordBad   :: Boolean
+    , gameActive    :: Boolean
     }
 
 newBoardState :: BoardSettings -> BoardState

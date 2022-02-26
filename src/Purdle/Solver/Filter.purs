@@ -3,10 +3,16 @@ module Purdle.Solver.Filter where
 
 import Control.Apply
 import Data.Array as Array
+import Data.Newtype (unwrap)
 import Data.Foldable
+import Data.Semigroup.Foldable
 import Data.FunctorWithIndex
 import Data.Lazy
+import Data.List.Lazy.NonEmpty as NE
+import Data.List.Lazy.NonEmpty (NonEmptyList)
 import Data.Letter
+import Data.Set.NonEmpty as NonEmptySet
+import Data.Set.NonEmpty (NonEmptySet)
 import Data.List.Lazy (List)
 import Data.List.Lazy as List
 import Data.Map (Map, SemigroupMap(..))
@@ -136,3 +142,31 @@ allowedWordsClueTrie = mkClueTrie allowedWords
 
 allowedAnswersClueTrie :: Trie Clue (Set Word)
 allowedAnswersClueTrie = mkClueTrie allowedAnswers
+
+-- type ClueMap = Map (Maybe Clue) (Lazy (Set Word))
+
+-- mkClueMap :: Array Word -> ClueMap
+-- mkClueMap wordList = mapWithIndex go $
+--     Set.toMap (Nothing `Set.insert` Set.map Just allClues)
+--   where
+--     wordSet :: Lazy (Set Word)
+--     wordSet = defer \_ -> Set.fromFoldable wordList
+--     go :: Maybe Clue -> Unit -> Lazy (Set Word)
+--     go = case _ of
+--       Nothing -> \_ -> wordSet
+--       Just cl -> \_ -> Set.filter (applyClue cl) <$> wordSet
+
+-- allowedWordsClueMap :: ClueMap
+-- allowedWordsClueMap = mkClueMap allowedWords
+
+-- allowedAnswersClueMap :: ClueMap
+-- allowedAnswersClueMap = mkClueMap allowedAnswers
+
+-- -- this is much slower for some reason
+-- queryClueMap :: Set Clue -> ClueMap -> Set Word
+-- queryClueMap cs cmap = case NE.fromFoldable cs of
+--     Nothing -> maybe Set.empty force $ Map.lookup Nothing cmap
+--     Just ne ->
+--       let ws = map (\cl -> maybe Set.empty force $ Map.lookup (Just cl) cmap) ne
+--           { head, tail } = NE.uncons ws
+--       in  foldr Set.intersection head tail

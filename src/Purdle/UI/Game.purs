@@ -6,9 +6,14 @@ import Control.Monad.State
 import Data.Array as Array
 import Data.Foldable
 import Data.Maybe
+import Purdle.Evaluate
 import Data.PositiveInt
+import Data.List.Lazy as List
 import Data.PositiveInt
+import Data.Set (Set)
+import Data.Set as Set
 import Data.Traversable
+import Data.Trie as Trie
 import Effect
 import Effect.Class
 import Effect.Console as Console
@@ -22,6 +27,7 @@ import Halogen.HTML.Properties as HP
 import Halogen.Query as HQ
 import Halogen.Util as HU
 import Prelude
+import Purdle.Solver.Filter
 import Purdle.Types
 import Purdle.UI.Board
 import Purdle.WordList
@@ -60,7 +66,7 @@ gpInProgress = case _ of
     GPInitialized  -> Nothing
     GPInProgress i -> Just i
     GPGameOver _   -> Nothing
-    
+
 instance Show GameProgress where
     show = case _ of
       GPInitialized -> "GPInitialized"
@@ -71,6 +77,7 @@ type GameState =
     { goalWord     :: Word
     , gameMode     :: GameMode
     , gameProgress :: GameProgress
+    , gameClues    :: Set Clue
     }
 
 toBoardSettings :: GameState -> BoardSettings
@@ -83,8 +90,16 @@ toBoardSettings gs =
 initializeGameState :: GameMode -> Effect GameState
 initializeGameState gameMode = do
     goalWord <- randomAnswer
-    pure { goalWord, gameMode, gameProgress: GPInitialized }
+    pure { goalWord, gameMode, gameProgress: GPInitialized, gameClues: Set.empty }
 
+showWithCount :: Int -> String -> String
+showWithCount i wd
+    | i == 1    = show i <> " " <> wd
+    | otherwise = show i <> " " <> wd <> "s"
+
+wordsLeft :: Set Clue -> Int
+wordsLeft ls = maybe 0 Set.size $
+    List.fromFoldable ls `Trie.lookup` allowedWordsClueTrie
 
 game :: forall m. MonadEffect m => H.Component GameQuery GameState GameOut m
 game = H.mkComponent
@@ -94,7 +109,15 @@ game = H.mkComponent
           [ HH.div [HU.classProp "gameContainer-board"]
               [ HH.slot _board unit board (toBoardSettings gst) GABoardOut ]
           , HH.div [HU.classProp "gameContainer-ui"] $ Array.catMaybes
-              [ Just $ HH.select
+              [ Just $ HH.div
+                    [HU.classProp "ui-text-leftover"]
+                    [ HH.span []
+                        [ HH.text $
+                            showWithCount (wordsLeft gst.gameClues) "word"
+                         <> " remaining"
+                        ]
+                    ]
+              , Just $ HH.select
                   [ HU.classProp "ui-select gameMode-picker"
                   , HP.disabled (isJust (gpInProgress gst.gameProgress))
                   , HE.onSelectedIndexChange \i -> GAChangeMode $
@@ -113,6 +136,7 @@ game = H.mkComponent
                   [HH.text "New Game"]
               ]
           ]
+    -- scald: peats
     , eval: H.mkEval $ H.defaultEval
         { handleAction = case _ of
             GABoardOut bo -> case bo of
@@ -123,8 +147,9 @@ game = H.mkComponent
                       GPInitialized  -> toNonNegative 5
                       GPInProgress i -> Just $ decrementPositive i
                       GPGameOver _   -> pure Nothing
-                newProgress <- for guessesLeftAfterThis \nni ->
-                  if gu == gst.goalWord
+                progClues <- for guessesLeftAfterThis \nni -> do
+                  let clues = cluesForWord gu (evalGuess gst.goalWord gu)
+                  newProgress <- if gu == gst.goalWord
                     then do
                       let gw = GameWin $ 6 - unNonNegative nni
                       H.raise $ GOGameOver gw
@@ -136,16 +161,24 @@ game = H.mkComponent
                         pure $ GPGameOver gl
                       Just i -> do
                         pure $ GPInProgress i
-                for_ newProgress \np -> do
-                  case np of
+                  pure { clues, newProgress }
+                for_ progClues \{clues, newProgress} -> do
+                  case newProgress of
                     GPGameOver _ -> void $ H.query _board unit $ FreezeGame unit
                     _            -> pure unit
-                  put $ gst { gameProgress = np }
+                  put $ gst
+                    { gameProgress = newProgress
+                    , gameClues    = gst.gameClues <> Set.fromFoldable clues
+                    }
             GANewGame -> do
               oldState <- get
               newWord  <- liftEffect randomAnswer
+              liftEffect $ Console.log (showWord newWord)
               gst'     <- modify \gst -> gst
-                { goalWord = newWord, gameProgress = GPInitialized }
+                { goalWord = newWord
+                , gameProgress = GPInitialized
+                , gameClues = Set.empty :: Set Clue
+                }
               void $ H.query _board unit $ NewGame (toBoardSettings gst') unit
               case oldState.gameProgress of
                 GPInProgress i -> H.raise (GOGameOver (GameLoss oldState.goalWord))

@@ -12,9 +12,11 @@ import Data.List.Lazy as List
 import Data.Maybe
 import Data.Sequence (Seq)
 import Data.Sequence as Seq
+import Data.Set as Set
 import Data.Trie (Trie)
 import Data.Trie as Trie
 import Data.V5
+import Effect
 import Effect.Class
 import Effect.Console as Console
 import Halogen as H
@@ -26,7 +28,6 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.Query as HQ
 import Halogen.Util as HU
-import Effect
 import Prelude
 import Purdle.Evaluate
 import Purdle.Summary
@@ -40,7 +41,11 @@ import Undefined
 mainComponent :: forall q o m. MonadEffect m => H.Component q Word o m
 mainComponent = H.mkComponent
     { initialState: \goalWord ->
-        { goalWord, gameMode: SuperHardMode, gameProgress: GPInitialized }
+        { goalWord
+        , gameMode: SuperHardMode
+        , gameProgress: GPInitialized
+        , gameClues: Set.empty
+        }
     , render: \gst -> HH.slot _board unit game gst identity
     , eval: H.mkEval $ H.defaultEval
         { handleAction = case _ of
